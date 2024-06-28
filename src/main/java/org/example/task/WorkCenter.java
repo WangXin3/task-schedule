@@ -4,16 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
-import org.optaplanner.core.api.domain.variable.InverseRelationShadowVariable;
 import org.optaplanner.core.api.domain.variable.PlanningListVariable;
-import org.optaplanner.core.api.domain.variable.PlanningVariable;
 
 import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@PlanningEntity
 public class WorkCenter {
     /**
      * 工作中心名称
@@ -30,6 +27,10 @@ public class WorkCenter {
      */
     private Integer priority;
 
-    @PlanningListVariable
-    private List<Task> taskList;
+    /**
+     * 该工作中心每日可工作几小时
+     */
+    private Integer capacity;
+
+
 }

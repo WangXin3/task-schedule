@@ -1,41 +1,49 @@
-package org.example.task;
+package org.example.projectjobscheduling;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.example.projectjobscheduling.Allocation;
-import org.example.projectjobscheduling.ExecutionMode;
-import org.example.projectjobscheduling.Project;
+import lombok.*;
+import org.example.projectjobscheduling.resource.Resource;
 import org.optaplanner.core.api.domain.solution.PlanningEntityCollectionProperty;
 import org.optaplanner.core.api.domain.solution.PlanningScore;
 import org.optaplanner.core.api.domain.solution.PlanningSolution;
 import org.optaplanner.core.api.domain.solution.ProblemFactCollectionProperty;
-import org.optaplanner.core.api.domain.valuerange.ValueRangeProvider;
 import org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScore;
-import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 
 import java.util.List;
 
 @PlanningSolution
+@Getter
+@Setter
 @AllArgsConstructor
-@NoArgsConstructor
-@Data
-public class TaskSchedule {
+public class Schedule extends AbstractPersistable {
 
     @ProblemFactCollectionProperty
-    private List<WorkOrder> workOrderList;
+    private List<Project> projectList;
 
     @ProblemFactCollectionProperty
-    private List<Task> taskList;
+    private List<Job> jobList;
 
     @ProblemFactCollectionProperty
-    private List<WorkCenterRequirement> workCenterRequirementList;
+    private List<ExecutionMode> executionModeList;
+
+    @ProblemFactCollectionProperty
+    private List<Resource> resourceList;
+
+    @ProblemFactCollectionProperty
+    private List<ResourceRequirement> resourceRequirementList;
 
     @PlanningEntityCollectionProperty
-    private List<Plan> planList;
+    private List<Allocation> allocationList;
 
     @PlanningScore
     private HardMediumSoftScore score;
+
+    public Schedule() {
+    }
+
+    public Schedule(long id) {
+        super(id);
+    }
+
+
+
 }
-
-

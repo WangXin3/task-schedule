@@ -2,34 +2,39 @@ package org.example.task;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.example.projectjobscheduling.JobType;
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
-import org.optaplanner.core.api.domain.variable.PlanningVariable;
-import org.optaplanner.core.api.domain.variable.ShadowVariable;
 
-import java.time.Duration;
 import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class Task {
+    @EqualsAndHashCode.Exclude
+    private WorkOrder workOrder;
+
     private String taskName;
-    private Duration duration;
-
-    private List<Task> prevTaskList;
-
-    private TaskType type;
+    private Integer duration;
 
     /**
-     * 任务在工序路线图中的层级，为了排序
+     * 后续任务列表
      */
-    private Integer deep;
+    @EqualsAndHashCode.Exclude
+    private List<Task> nextTaskList;
+
+    private TaskType taskType;
+
+    private JobType jobType;
 
     /**
-     * 交期
+     * 可选的工作中心
      */
-    private Integer deadLine;
+    private List<WorkCenterRequirement> workCenterRequirementList;
+
+
 }
 
 
