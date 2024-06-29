@@ -45,7 +45,7 @@ public class TaskScheduleApp {
 
 
         WorkOrder workOrder1 = new WorkOrder("工单一", 0, 20, Collections.emptyList());
-        WorkOrder workOrder2 = new WorkOrder("工单二", 0, 20, Collections.emptyList());
+        WorkOrder workOrder2 = new WorkOrder("工单二", 5, 20, Collections.emptyList());
         WorkOrder workOrder3 = new WorkOrder("工单三", 3, 30, Collections.emptyList());
         WORK_ORDER_LIST = List.of(workOrder1, workOrder2, workOrder3);
 
@@ -111,7 +111,7 @@ public class TaskScheduleApp {
         solverConfig.withSolutionClass(TaskSchedule.class)
                 .withEntityClasses(Plan.class)
                 .withConstraintProviderClass(WorkOrderTaskSchedulingConstraintProvider.class)
-                .withTerminationSpentLimit(Duration.ofSeconds(30))
+                .withTerminationSpentLimit(Duration.ofSeconds(5))
                 .withPhaseList(List.of(constructionHeuristicPhaseConfig, localSearchPhaseConfig));
 
         SolverFactory<TaskSchedule> solverFactory = SolverFactory.create(solverConfig);
@@ -138,7 +138,7 @@ public class TaskScheduleApp {
                 Task task = p.getTask();
                 WorkCenter workCenter = p.getWorkCenterRequirement().getWorkCenter();
                 System.out.println(task.getTaskName() + "(" + task.getDuration() + ") "
-                        + workCenter.getWorkCenterName() + workCenter.getTaskTypes()
+                        + workCenter.getWorkCenterName() + "(" + workCenter.getPriority() + ")" + workCenter.getTaskTypes()
                         + " --> startDate: " + p.getStartDate() + " endDate: " + p.getEndDate());
             });
         }
@@ -241,7 +241,7 @@ public class TaskScheduleApp {
         // 生成任务
         List<WorkCenterRequirement> workCenterRequirementList
                 = getWorkCenterListByWorkType(process.getTaskType()).stream()
-                .map(w -> new WorkCenterRequirement(w, process.getDuration() * num))
+                .map(w -> new WorkCenterRequirement(w, 1))
                 .collect(Collectors.toList());
 
         Task currTask = new Task(process.getWorkOrder(), process.getProcessName(),

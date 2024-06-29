@@ -1,4 +1,4 @@
-package org.example.task;
+package org.example.task.score;
 
 import cn.hutool.core.collection.CollUtil;
 import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;

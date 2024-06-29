@@ -1,6 +1,5 @@
 package org.example.task.solver;
 
-import org.example.projectjobscheduling.ExecutionMode;
 import org.example.task.TaskSchedule;
 import org.example.task.WorkCenter;
 import org.example.task.WorkCenterRequirement;
@@ -8,8 +7,6 @@ import org.optaplanner.core.impl.heuristic.selector.common.decorator.SelectionSo
 
 import java.util.Comparator;
 
-import static java.util.Comparator.comparingDouble;
-import static java.util.Comparator.comparingLong;
 
 public class WorkCenterStrengthWeightFactory implements SelectionSorterWeightFactory<TaskSchedule, WorkCenterRequirement> {
 
@@ -20,10 +17,10 @@ public class WorkCenterStrengthWeightFactory implements SelectionSorterWeightFac
 
     public static class WorkCenterStrengthWeight implements Comparable<WorkCenterStrengthWeight> {
 
-        private static final Comparator<WorkCenterStrengthWeight> COMPARATOR = comparingDouble(
-                (WorkCenterStrengthWeight weight) -> weight.priority)
-                .thenComparing(weight -> weight.workCenterRequirement.getWorkCenter(),
-                        comparingLong(WorkCenter::getCapacity));
+        private static final Comparator<WorkCenterStrengthWeight> COMPARATOR =
+                Comparator.comparingInt((WorkCenterStrengthWeight weight) -> weight.priority)
+                        .thenComparing(weight -> weight.workCenterRequirement.getWorkCenter(),
+                        Comparator.comparingInt(WorkCenter::getCapacity));
 
         private final WorkCenterRequirement workCenterRequirement;
         private final Integer priority;

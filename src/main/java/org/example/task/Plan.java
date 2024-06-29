@@ -23,7 +23,8 @@ import java.util.List;
  * @since 2024/6/28 10:09
  */
 
-@PlanningEntity(pinningFilter = NotSourceOrSinkAllocationFilter.class)
+//@PlanningEntity(pinningFilter = NotSourceOrSinkAllocationFilter.class)
+@PlanningEntity
 @Getter
 @Setter
 @NoArgsConstructor
