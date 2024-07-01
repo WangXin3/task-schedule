@@ -2,31 +2,26 @@ package org.example.task.solver;
 
 import org.example.task.TaskSchedule;
 import org.example.task.WorkCenter;
-import org.example.task.WorkCenterRequirement;
 import org.optaplanner.core.impl.heuristic.selector.common.decorator.SelectionSorterWeightFactory;
 
 import java.util.Comparator;
 
 
-public class WorkCenterStrengthWeightFactory implements SelectionSorterWeightFactory<TaskSchedule, WorkCenterRequirement> {
+public class WorkCenterStrengthWeightFactory implements SelectionSorterWeightFactory<TaskSchedule, WorkCenter> {
 
     @Override
-    public WorkCenterStrengthWeight createSorterWeight(TaskSchedule taskSchedule, WorkCenterRequirement workCenterRequirement) {
-        return new WorkCenterStrengthWeight(workCenterRequirement, workCenterRequirement.getWorkCenter().getPriority());
+    public WorkCenterStrengthWeight createSorterWeight(TaskSchedule taskSchedule, WorkCenter workCenter) {
+        return new WorkCenterStrengthWeight(workCenter.getPriority());
     }
 
     public static class WorkCenterStrengthWeight implements Comparable<WorkCenterStrengthWeight> {
 
         private static final Comparator<WorkCenterStrengthWeight> COMPARATOR =
-                Comparator.comparingInt((WorkCenterStrengthWeight weight) -> weight.priority)
-                        .thenComparing(weight -> weight.workCenterRequirement.getWorkCenter(),
-                        Comparator.comparingInt(WorkCenter::getCapacity));
+                Comparator.comparingInt((WorkCenterStrengthWeight weight) -> weight.priority);
 
-        private final WorkCenterRequirement workCenterRequirement;
         private final Integer priority;
 
-        public WorkCenterStrengthWeight(WorkCenterRequirement workCenterRequirement, Integer priority) {
-            this.workCenterRequirement = workCenterRequirement;
+        public WorkCenterStrengthWeight(Integer priority) {
             this.priority = priority;
         }
 

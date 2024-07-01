@@ -1,9 +1,7 @@
 package org.example.task;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.RandomUtil;
-import org.example.projectjobscheduling.*;
-import org.example.projectjobscheduling.score.ProjectJobSchedulingConstraintProvider;
+import org.example.projectjobscheduling.JobType;
 import org.example.task.score.WorkOrderTaskSchedulingConstraintProvider;
 import org.optaplanner.core.api.solver.Solver;
 import org.optaplanner.core.api.solver.SolverFactory;
@@ -44,9 +42,9 @@ public class TaskScheduleApp {
         WORK_CENTER_LIST = List.of(workCenter1, workCenter2, workCenter3, workCenter4);
 
 
-        WorkOrder workOrder1 = new WorkOrder("工单一", 0, 20, Collections.emptyList());
-        WorkOrder workOrder2 = new WorkOrder("工单二", 5, 20, Collections.emptyList());
-        WorkOrder workOrder3 = new WorkOrder("工单三", 3, 30, Collections.emptyList());
+        WorkOrder workOrder1 = new WorkOrder("工单一", 0, 100);
+        WorkOrder workOrder2 = new WorkOrder("工单二", 5, 100);
+        WorkOrder workOrder3 = new WorkOrder("工单三", 3, 100);
         WORK_ORDER_LIST = List.of(workOrder1, workOrder2, workOrder3);
 
         Process C4 = new Process("1", workOrder1, TaskType.C4.name(), TaskType.C4, JobType.SINK, 1, null);
@@ -102,7 +100,7 @@ public class TaskScheduleApp {
                 .withEntityTabuRatio(0.2).withLateAcceptanceSize(500));
         localSearchPhaseConfig.setForagerConfig(new LocalSearchForagerConfig().withAcceptedCountLimit(4));
         localSearchPhaseConfig.setMoveSelectorConfig(new UnionMoveSelectorConfig().withMoveSelectors(
-                new ChangeMoveSelectorConfig().withValueSelectorConfig(new ValueSelectorConfig("workCenterRequirement")),
+                new ChangeMoveSelectorConfig().withValueSelectorConfig(new ValueSelectorConfig("workCenter")),
                 new ChangeMoveSelectorConfig().withValueSelectorConfig(new ValueSelectorConfig("delay"))));
 
         ConstructionHeuristicPhaseConfig constructionHeuristicPhaseConfig = new ConstructionHeuristicPhaseConfig();
@@ -111,7 +109,7 @@ public class TaskScheduleApp {
         solverConfig.withSolutionClass(TaskSchedule.class)
                 .withEntityClasses(Plan.class)
                 .withConstraintProviderClass(WorkOrderTaskSchedulingConstraintProvider.class)
-                .withTerminationSpentLimit(Duration.ofSeconds(5))
+                .withTerminationSpentLimit(Duration.ofSeconds(30))
                 .withPhaseList(List.of(constructionHeuristicPhaseConfig, localSearchPhaseConfig));
 
         SolverFactory<TaskSchedule> solverFactory = SolverFactory.create(solverConfig);
@@ -136,7 +134,7 @@ public class TaskScheduleApp {
 
             planList.forEach(p -> {
                 Task task = p.getTask();
-                WorkCenter workCenter = p.getWorkCenterRequirement().getWorkCenter();
+                WorkCenter workCenter = p.getWorkCenter();
                 System.out.println(task.getTaskName() + "(" + task.getDuration() + ") "
                         + workCenter.getWorkCenterName() + "(" + workCenter.getPriority() + ")" + workCenter.getTaskTypes()
                         + " --> startDate: " + p.getStartDate() + " endDate: " + p.getEndDate());
@@ -147,20 +145,17 @@ public class TaskScheduleApp {
     private TaskSchedule initializeTaskSchedule() {
         List<Task> taskList = PROCESS_LIST.stream().flatMap(p -> {
             // 生成任务
-            List<Task> taskListTemp = this.createTask(p, RandomUtil.randomInt(1, 5));
-            p.getWorkOrder().setTaskList(taskListTemp);
+            List<Task> taskListTemp = this.createTask(p, 5);
             return taskListTemp.stream();
         }).collect(Collectors.toList());
 
         // 生成计划
         List<Plan> planList = new ArrayList<>(taskList.size());
         Map<Task, Plan> taskToPlanMap = new HashMap<>(taskList.size());
-        Map<WorkOrder, Plan> workOrderToSourcePlanMap = new HashMap<>(WORK_ORDER_LIST.size());
-        Map<WorkOrder, Plan> workOrderToSinkPlanMap = new HashMap<>(WORK_ORDER_LIST.size());
 
-        Set<WorkCenterRequirement> workCenterRequirementList = new HashSet<>();
+        Set<WorkCenter> workCenterList = new HashSet<>();
         for (Task task : taskList) {
-            workCenterRequirementList.addAll(task.getWorkCenterRequirementList());
+            workCenterList.addAll(task.getWorkCenterList());
             Plan plan = new Plan();
             plan.setTask(task);
             plan.setPredecessorPlanList(new ArrayList<>(task.getNextTaskList().size()));
@@ -168,45 +163,26 @@ public class TaskScheduleApp {
 
             // Uninitialized allocations take no time, but don't break the predecessorsDoneDate cascade to sink.
             plan.setPredecessorsDoneDate(task.getWorkOrder().getReleaseDate());
-            if (task.getJobType() == JobType.SOURCE) {
-                plan.setDelay(0);
-                if (task.getWorkCenterRequirementList().size() != 1) {
-//                    throw new IllegalArgumentException("The task (" + task
-//                            + ")'s workCenterList (" + task.getWorkCenterList()
-//                            + ") is expected to be a singleton.");
-                }
-                plan.setWorkCenterRequirement(task.getWorkCenterRequirementList().get(0));
-                workOrderToSourcePlanMap.put(task.getWorkOrder(), plan);
-            } else if (task.getJobType() == JobType.SINK) {
-                plan.setDelay(0);
-                if (task.getWorkCenterRequirementList().size() != 1) {
-//                    throw new IllegalArgumentException("The task (" + task
-//                            + ")'s workCenterList (" + task.getWorkCenterList()
-//                            + ") is expected to be a singleton.");
-                }
-                plan.setWorkCenterRequirement(task.getWorkCenterRequirementList().get(0));
-                workOrderToSinkPlanMap.put(task.getWorkOrder(), plan);
-            }
+
             planList.add(plan);
             taskToPlanMap.put(task, plan);
         }
+
+        // 构建计划的前置/后置关系
         for (Plan plan : planList) {
             Task task = plan.getTask();
-            plan.setSourcePlan(workOrderToSourcePlanMap.get(task.getWorkOrder()));
-            plan.setSinkPlan(workOrderToSinkPlanMap.get(task.getWorkOrder()));
+
             for (Task nextTask : task.getNextTaskList()) {
+                // 将本计划的下一计划查询出来
                 Plan successorPlan = taskToPlanMap.get(nextTask);
+                // 将本计划的下一计划添加到后置计划列表中
                 plan.getSuccessorPlanList().add(successorPlan);
+                // 将本计划添加到下一计划的前置计划列表中
                 successorPlan.getPredecessorPlanList().add(plan);
             }
         }
-        for (Plan sourcePlan : workOrderToSourcePlanMap.values()) {
-            for (Plan plan : sourcePlan.getSuccessorPlanList()) {
-                plan.setPredecessorsDoneDate(sourcePlan.getEndDate());
-            }
-        }
 
-        return new TaskSchedule(WORK_ORDER_LIST, taskList, new ArrayList<>(workCenterRequirementList),
+        return new TaskSchedule(WORK_ORDER_LIST, taskList, new ArrayList<>(workCenterList),
                 planList, null);
     }
 
@@ -239,14 +215,9 @@ public class TaskScheduleApp {
         }
 
         // 生成任务
-        List<WorkCenterRequirement> workCenterRequirementList
-                = getWorkCenterListByWorkType(process.getTaskType()).stream()
-                .map(w -> new WorkCenterRequirement(w, 1))
-                .collect(Collectors.toList());
-
         Task currTask = new Task(process.getWorkOrder(), process.getProcessName(),
                 process.getDuration() * num, new ArrayList<>(), process.getTaskType(),
-                process.getJobType(), workCenterRequirementList);
+                process.getJobType(), getWorkCenterListByWorkType(process.getTaskType()));
         taskMap.put(process.getId(), currTask);
 
         if (CollUtil.isNotEmpty(process.getNextProcessList())) {

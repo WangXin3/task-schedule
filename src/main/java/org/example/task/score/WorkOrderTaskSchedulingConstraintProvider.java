@@ -1,12 +1,8 @@
 package org.example.task.score;
 
-import org.example.projectjobscheduling.Allocation;
 import org.example.projectjobscheduling.JobType;
-import org.example.projectjobscheduling.ResourceRequirement;
 import org.example.task.Plan;
-import org.example.task.Task;
 import org.example.task.WorkCenter;
-import org.example.task.WorkCenterRequirement;
 import org.optaplanner.core.api.score.buildin.hardmediumsoft.HardMediumSoftScore;
 import org.optaplanner.core.api.score.stream.*;
 
@@ -18,7 +14,7 @@ public class WorkOrderTaskSchedulingConstraintProvider implements ConstraintProv
 
     @Override
     public Constraint[] defineConstraints(ConstraintFactory constraintFactory) {
-        return new Constraint[] {
+        return new Constraint[]{
                 renewableResourceCapacity(constraintFactory),
                 workCenter(constraintFactory),
                 totalProjectDelay(constraintFactory),
@@ -28,7 +24,7 @@ public class WorkOrderTaskSchedulingConstraintProvider implements ConstraintProv
 
     Constraint workCenter(ConstraintFactory constraintFactory) {
         return constraintFactory.forEach(Plan.class)
-                .filter(plan -> !plan.getWorkCenterRequirement().getWorkCenter()
+                .filter(plan -> !plan.getWorkCenter()
                         .getTaskTypes().contains(plan.getTask().getTaskType()))
                 .penalize(HardMediumSoftScore.ONE_HARD)
                 .asConstraint("工作中心不匹配");
@@ -36,19 +32,16 @@ public class WorkOrderTaskSchedulingConstraintProvider implements ConstraintProv
 
 
     protected Constraint renewableResourceCapacity(ConstraintFactory constraintFactory) {
-        return constraintFactory.forEach(WorkCenterRequirement.class)
-                .join(Plan.class, Joiners.equal(Function.identity(), Plan::getWorkCenterRequirement))
+        return constraintFactory.forEach(WorkCenter.class)
+                .join(Plan.class, Joiners.equal(Function.identity(), Plan::getWorkCenter))
                 .flattenLast(plan -> IntStream.range(plan.getStartDate(), plan.getEndDate())
                         .boxed()
                         .collect(Collectors.toList()))
-                .groupBy((workCenterRequirement, date) -> workCenterRequirement,
-                        (workCenterRequirement, date) -> date,
-                        ConstraintCollectors.sum((workCenterRequirement, date) -> workCenterRequirement.getRequirement()))
-                .filter((workCenterRequirement, date, totalRequirement)
-                        -> totalRequirement > workCenterRequirement.getWorkCenter().getCapacity())
+                .groupBy((workCenter, date) -> workCenter, (workCenter, date) -> date,
+                        ConstraintCollectors.sum((workCenter, date) -> 1))
+                .filter((workCenter, date, totalRequirement) -> totalRequirement > workCenter.getCapacity())
                 .penalize(HardMediumSoftScore.ONE_HARD,
-                        (workCenterRequirement, date, totalRequirement)
-                                -> totalRequirement - workCenterRequirement.getWorkCenter().getCapacity())
+                        (workCenter, date, totalRequirement) -> totalRequirement - workCenter.getCapacity())
                 .asConstraint("Renewable resource capacity");
     }
 
@@ -57,7 +50,7 @@ public class WorkOrderTaskSchedulingConstraintProvider implements ConstraintProv
                 .filter(plan -> plan.getEndDate() != null)
                 .filter(plan -> plan.getJobType() == JobType.SINK)
                 .impact(HardMediumSoftScore.ONE_MEDIUM,
-                        allocation -> allocation.getProjectCriticalPathEndDate() - allocation.getEndDate())
+                        plan -> plan.getProjectCriticalPathEndDate() - plan.getEndDate())
                 .asConstraint("Total project delay");
     }
 
@@ -69,5 +62,4 @@ public class WorkOrderTaskSchedulingConstraintProvider implements ConstraintProv
                 .penalize(HardMediumSoftScore.ONE_SOFT, maxEndDate -> maxEndDate)
                 .asConstraint("Total makespan");
     }
-
 }

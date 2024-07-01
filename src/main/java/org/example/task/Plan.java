@@ -6,9 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.example.projectjobscheduling.JobType;
 import org.example.task.solver.DelayStrengthComparator;
-import org.example.task.solver.WorkCenterStrengthWeightFactory;
-import org.example.task.solver.NotSourceOrSinkAllocationFilter;
 import org.example.task.solver.PredecessorsDoneDateUpdatingVariableListener;
+import org.example.task.solver.WorkCenterStrengthWeightFactory;
 import org.optaplanner.core.api.domain.entity.PlanningEntity;
 import org.optaplanner.core.api.domain.valuerange.CountableValueRange;
 import org.optaplanner.core.api.domain.valuerange.ValueRangeFactory;
@@ -60,8 +59,8 @@ public class Plan {
      */
     // Planning variables: changes during planning, between score calculations.
     @PlanningVariable(strengthWeightFactoryClass = WorkCenterStrengthWeightFactory.class,
-            valueRangeProviderRefs = "workCenterRequirementRange")
-    private WorkCenterRequirement workCenterRequirement;
+            valueRangeProviderRefs = "workCenterRange")
+    private WorkCenter workCenter;
     /**
      * 延迟
      */
@@ -74,8 +73,6 @@ public class Plan {
      */
     // Shadow variables
     @ShadowVariable(variableListenerClass = PredecessorsDoneDateUpdatingVariableListener.class,
-            sourceVariableName = "workCenterRequirement")
-    @ShadowVariable(variableListenerClass = PredecessorsDoneDateUpdatingVariableListener.class,
             sourceVariableName = "delay")
     private Integer predecessorsDoneDate;
 
@@ -84,9 +81,9 @@ public class Plan {
      *
      * @return /
      */
-    @ValueRangeProvider(id = "workCenterRequirementRange")
-    public List<WorkCenterRequirement> getWorkCenterRequirementRange() {
-        return task.getWorkCenterRequirementList();
+    @ValueRangeProvider(id = "workCenterRange")
+    public List<WorkCenter> getWorkCenterRange() {
+        return task.getWorkCenterList();
     }
 
     /**

@@ -3,8 +3,6 @@ package org.example.task;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.optaplanner.core.api.domain.entity.PlanningEntity;
-import org.optaplanner.core.api.domain.variable.PlanningListVariable;
 
 import java.util.List;
 
@@ -28,7 +26,7 @@ public class WorkCenter {
     private Integer priority;
 
     /**
-     * 该工作中心每日可工作几小时
+     * 该工作中心在一个时间单元内能干几个工序任务
      */
     private Integer capacity;
 

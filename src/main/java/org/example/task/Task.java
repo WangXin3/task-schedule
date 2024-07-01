@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.example.projectjobscheduling.JobType;
-import org.optaplanner.core.api.domain.entity.PlanningEntity;
 
 import java.util.List;
 
@@ -13,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Task {
+
     @EqualsAndHashCode.Exclude
     private WorkOrder workOrder;
 
@@ -32,7 +32,7 @@ public class Task {
     /**
      * 可选的工作中心
      */
-    private List<WorkCenterRequirement> workCenterRequirementList;
+    private List<WorkCenter> workCenterList;
 
 
 }

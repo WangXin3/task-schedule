@@ -2,10 +2,7 @@ package org.example.task;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * @author wangxin
@@ -22,21 +19,15 @@ public class WorkOrder {
     private String workOrderName;
 
     /**
-     * 项目开始时间
+     * 项目开始时间 取这一批最早的派工单的计划开始时间为基准0
      */
     private Integer releaseDate;
 
     /**
-     * 历时多少天之后交付，即交期-开始日期
+     * 项目期望持续多长时间完成（单位：小时）
      */
     private Integer criticalPathDuration;
 
-
-    /**
-     * 该派工单的所有工序任务
-     */
-    @EqualsAndHashCode.Exclude
-    private List<Task> taskList;
 
 
     /**
