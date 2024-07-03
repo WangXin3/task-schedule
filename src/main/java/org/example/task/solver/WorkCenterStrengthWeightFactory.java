@@ -9,9 +9,11 @@ import java.util.Comparator;
 
 public class WorkCenterStrengthWeightFactory implements SelectionSorterWeightFactory<TaskSchedule, WorkCenter> {
 
+    public static final Comparator<WorkCenter> COMPARATOR = Comparator.comparingInt(WorkCenter::getPriority);
+
     @Override
-    public WorkCenterStrengthWeight createSorterWeight(TaskSchedule taskSchedule, WorkCenter workCenter) {
-        return new WorkCenterStrengthWeight(workCenter.getPriority());
+    public Comparable<WorkCenter> createSorterWeight(TaskSchedule taskSchedule, WorkCenter workCenter) {
+        return o -> COMPARATOR.compare(workCenter, o);
     }
 
     public static class WorkCenterStrengthWeight implements Comparable<WorkCenterStrengthWeight> {

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Work Orders Gantt Chart Comparison</title>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', {'packages':['gantt']});
+        google.charts.setOnLoadCallback(drawCharts);
+
+        function drawCharts() {
+            drawChart('dataInput1', 'chart_div1');
+        }
+
+        function hoursToMilliseconds(hours) {
+          return hours * 60 * 60 * 1000;
+        }
+
+        function drawChart(dataInputId, chartDivId) {
+            var container = document.getElementById(chartDivId);
+            var chart = new google.visualization.Gantt(container);
+            var dataTable = new google.visualization.DataTable();
+
+            dataTable.addColumn('string', 'Task ID');
+            dataTable.addColumn('string', 'Task Name');
+            dataTable.addColumn('string', 'Resource');
+            dataTable.addColumn('date', 'Start Date');
+            dataTable.addColumn('date', 'End Date');
+            dataTable.addColumn('number', 'Duration');
+            dataTable.addColumn('number', 'Percent Complete');
+            dataTable.addColumn('string', 'Dependencies');
+
+
+            var inputData = document.getElementById(dataInputId).value;
+            var rows = inputData.split('\n');
+            var dataRows = [];
+            var currTime = (new Date(2024,7,3,8,0,0)).valueOf();
+
+
+            rows.forEach(row => {
+                var fields = row.split('||');
+                var a = fields[0];
+                var b = fields[1];
+
+                var aa = a.split(',');
+
+                var workOrder = aa[0].trim();
+                var task = aa[1].trim();
+                var workCenter = aa[2].trim();
+                var start = parseInt(aa[3].trim());
+                var end = parseInt(aa[4].trim());
+
+                dataRows.push([task, task + '(' + workOrder + ')', workCenter, new Date(currTime + hoursToMilliseconds(start)), new Date(currTime + hoursToMilliseconds(end)), hoursToMilliseconds(end - start), 0, b === '' ? null : b]);
+                
+            });
+
+            dataTable.addRows(dataRows);
+
+            var options = {
+                gantt: {
+                    criticalPathEnabled: true,
+                    criticalPathStyle: {
+                      stroke: '#e64a19',
+                      strokeWidth: 5
+                    },
+                    sortTasks: false,
+
+                },
+            };
+
+            chart.draw(dataTable, options);
+        }
+    </script>
+</head>
+<body>
+    <h3>Input Data Set 1 (one task per line, format: Work Order, Task, Start, End)</h3>
+    <textarea id="dataInput1" rows="10" cols="50">工单一0,B2,WorkC1,0,27||
+工单一0,B1,WorkC2,27,45||B2
+工单一0,A3,WorkC3,28,37||B2
+工单一0,C4,WorkC4,45,54||A3,B1
+工单二5,B4,WorkC4,16,37||
+工单二5,C2,WorkC3,38,45||B4
+工单二5,C1,WorkC2,45,73||C2
+工单二5,B3,WorkC3,73,87||C1
+工单二5,A2,WorkC2,87,94||B3
+工单二5,A4,WorkC4,94,115||A2
+工单三3,A1,WorkC4,4,12||
+工单三3,C3,WorkC1,27,51||A1</textarea>
+    
+    <br>
+    <button onclick="drawCharts()">Render Charts</button>
+    <div id="chart_div1" style="width: 100%; height: 800px;"></div>
+</body>
+</html>

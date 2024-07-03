@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Work Orders Gantt Chart Comparison</title>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load('current', {'packages':['timeline']});
+        google.charts.setOnLoadCallback(drawCharts);
+
+        function drawCharts() {
+            drawChart('dataInput1', 'chart_div1');
+            drawChart('dataInput2', 'chart_div2');
+        }
+
+        function drawChart(dataInputId, chartDivId) {
+            var container = document.getElementById(chartDivId);
+            var chart = new google.visualization.Timeline(container);
+            var dataTable = new google.visualization.DataTable();
+
+            dataTable.addColumn({ type: 'string', id: 'Work Order' });
+            dataTable.addColumn({ type: 'string', id: 'Task' });
+            dataTable.addColumn({ type: 'number', id: 'Start' });
+            dataTable.addColumn({ type: 'number', id: 'End' });
+
+            var inputData = document.getElementById(dataInputId).value;
+            var rows = inputData.split('\n');
+            var dataRows = [];
+
+            rows.forEach(row => {
+                var fields = row.split('||')[0].split(',');
+                if (fields.length === 5) {
+                    var workOrder = fields[0].trim();
+                    var task = fields[1].trim();
+                    var workCenter = fields[2].trim();
+                    var start = parseInt(fields[3].trim());
+                    var end = parseInt(fields[4].trim());
+                    dataRows.push([workOrder, task + '(' + workCenter + ')', start * 3600000, end * 3600000]);
+                }
+            });
+
+            dataTable.addRows(dataRows);
+
+            var options = {
+                timeline: { 
+                    groupByRowLabel: true 
+                },
+                hAxis: {
+                    title: 'Time (hours)',
+                    minValue: 0
+                }
+            };
+
+            chart.draw(dataTable, options);
+        }
+    </script>
+</head>
+<body>
+    <h3>Input Data Set 1 (one task per line, format: Work Order, Task, Start, End)</h3>
+    <textarea id="dataInput1" rows="10" cols="50">工单一,B2,WorkCenter1,0,27
+工单一,B1,WorkCenter2,27,45
+工单一,A3,WorkCenter3,29,38
+工单一,C4,WorkCenter4,45,54
+工单二,B4,WorkCenter2,6,27
+工单二,C2,WorkCenter3,38,45
+工单二,C1,WorkCenter2,45,73
+工单二,B3,WorkCenter3,73,87
+工单二,A2,WorkCenter2,87,94
+工单二,A4,WorkCenter1,94,115
+工单三,A1,WorkCenter4,8,16
+工单三,C3,WorkCenter1,27,51</textarea>
+    
+    <h3>Input Data Set 2 (one task per line, format: Work Order, Task, Start, End)</h3>
+    <textarea id="dataInput2" rows="10" cols="50">工单一,B2,WorkCenter1,0,30
+工单一,B1,WorkCenter2,30,50
+工单一,A3,WorkCenter3,35,40
+工单一,C4,WorkCenter4,50,60
+工单二,B4,WorkCenter2,10,30
+工单二,C2,WorkCenter3,40,50
+工单二,C1,WorkCenter2,50,80
+工单二,B3,WorkCenter3,80,90
+工单二,A2,WorkCenter2,90,100
+工单二,A4,WorkCenter1,100,120
+工单三,A1,WorkCenter4,12,20
+工单三,C3,WorkCenter1,30,60</textarea>
+    
+    <br>
+    <button onclick="drawCharts()">Render Charts</button>
+    <div id="chart_div1" style="width: 100%; height: 400px;"></div>
+    <div id="chart_div2" style="width: 100%; height: 400px;"></div>
+</body>
+</html>

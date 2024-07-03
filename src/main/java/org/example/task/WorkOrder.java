@@ -28,6 +28,11 @@ public class WorkOrder {
      */
     private Integer criticalPathDuration;
 
+    /**
+     * 生产数量
+     */
+    private Integer num;
+
 
 
     /**
