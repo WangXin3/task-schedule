@@ -2,6 +2,7 @@ package org.example.task;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.RandomUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.example.projectjobscheduling.JobType;
 import org.example.task.score.WorkOrderTaskSchedulingConstraintProvider;
 import org.optaplanner.core.api.solver.Solver;
@@ -12,8 +13,7 @@ import org.optaplanner.core.config.heuristic.selector.move.composite.UnionMoveSe
 import org.optaplanner.core.config.heuristic.selector.move.generic.ChangeMoveSelectorConfig;
 import org.optaplanner.core.config.heuristic.selector.value.ValueSelectorConfig;
 import org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig;
-import org.optaplanner.core.config.localsearch.decider.acceptor.LocalSearchAcceptorConfig;
-import org.optaplanner.core.config.localsearch.decider.forager.LocalSearchForagerConfig;
+import org.optaplanner.core.config.localsearch.LocalSearchType;
 import org.optaplanner.core.config.solver.SolverConfig;
 import org.optaplanner.core.config.solver.termination.TerminationConfig;
 
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  * @author wangxin
  * @since 2024/6/11 15:08
  */
-
+@Slf4j
 public class TaskScheduleApp {
     private static final List<WorkCenter> WORK_CENTER_LIST;
     private static final List<Process> PROCESS_LIST;
@@ -43,9 +43,9 @@ public class TaskScheduleApp {
         WORK_CENTER_LIST = List.of(workCenter1, workCenter2, workCenter3, workCenter4);
 
 
-        WorkOrder workOrder1 = new WorkOrder("工单一", 0, 100, 9);
-        WorkOrder workOrder2 = new WorkOrder("工单二", 5, 100, 7);
-        WorkOrder workOrder3 = new WorkOrder("工单三", 3, 100, 8);
+        WorkOrder workOrder1 = new WorkOrder("工单一", 0, 100, null);
+        WorkOrder workOrder2 = new WorkOrder("工单二", 5, 100, null);
+        WorkOrder workOrder3 = new WorkOrder("工单三", 3, 100, null);
         WORK_ORDER_LIST = List.of(workOrder1, workOrder2, workOrder3);
 
         Process C4 = new Process("1", workOrder1, TaskType.C4.name(), TaskType.C4, JobType.SINK, 1, null);
@@ -96,12 +96,23 @@ public class TaskScheduleApp {
 
     void test2() {
         SolverConfig solverConfig = new SolverConfig();
+        // 构造启发式解决方案
+        ConstructionHeuristicPhaseConfig constructionHeuristicPhaseConfig = new ConstructionHeuristicPhaseConfig();
+        constructionHeuristicPhaseConfig.setConstructionHeuristicType(ConstructionHeuristicType.FIRST_FIT);
 
+        // 本地搜索解决方案
         LocalSearchPhaseConfig localSearchPhaseConfig = new LocalSearchPhaseConfig();
-        localSearchPhaseConfig.setAcceptorConfig(new LocalSearchAcceptorConfig()
-                .withEntityTabuRatio(0.2).withLateAcceptanceSize(500));
+        // 简化配置
+//        localSearchPhaseConfig.setLocalSearchType(LocalSearchType.HILL_CLIMBING); // 0hard/60medium/-143soft
+        localSearchPhaseConfig.setLocalSearchType(LocalSearchType.TABU_SEARCH); // 0hard/88medium/-116soft
+//        localSearchPhaseConfig.setLocalSearchType(LocalSearchType.LATE_ACCEPTANCE); // 0hard/75medium/-121soft
+//        localSearchPhaseConfig.setLocalSearchType(LocalSearchType.GREAT_DELUGE); // 0hard/61medium/-132soft
+//        localSearchPhaseConfig.setLocalSearchType(LocalSearchType.VARIABLE_NEIGHBORHOOD_DESCENT); // 0hard/60medium/-143soft
 
-        localSearchPhaseConfig.setForagerConfig(new LocalSearchForagerConfig().withAcceptedCountLimit(4));
+        // 高级配置
+//        localSearchPhaseConfig.setAcceptorConfig(new LocalSearchAcceptorConfig()
+//                .withEntityTabuRatio(0.2).withLateAcceptanceSize(500));
+//        localSearchPhaseConfig.setForagerConfig(new LocalSearchForagerConfig().withAcceptedCountLimit(4));
 
         localSearchPhaseConfig.setMoveSelectorConfig(new UnionMoveSelectorConfig().withMoveSelectors(
                 new ChangeMoveSelectorConfig()
@@ -109,29 +120,46 @@ public class TaskScheduleApp {
                 new ChangeMoveSelectorConfig()
                         .withValueSelectorConfig(new ValueSelectorConfig("delay"))));
 
-        ConstructionHeuristicPhaseConfig constructionHeuristicPhaseConfig = new ConstructionHeuristicPhaseConfig();
-        constructionHeuristicPhaseConfig.setConstructionHeuristicType(ConstructionHeuristicType.FIRST_FIT);
 
         solverConfig.withSolutionClass(TaskSchedule.class)
                 .withEntityClasses(Plan.class)
                 .withConstraintProviderClass(WorkOrderTaskSchedulingConstraintProvider.class)
                 .withTerminationConfig(new TerminationConfig().withUnimprovedSecondsSpentLimit(5L))
-//                .withTerminationSpentLimit(Duration.ofSeconds(5))
+//                .withTerminationSpentLimit(Duration.ofSeconds(120))
+//                .withTerminationConfig(new TerminationConfig().withScoreCalculationCountLimit(10000L))
                 .withPhaseList(List.of(constructionHeuristicPhaseConfig, localSearchPhaseConfig));
 
         SolverFactory<TaskSchedule> solverFactory = SolverFactory.create(solverConfig);
         Solver<TaskSchedule> solver = solverFactory.buildSolver();
 
+        solver.addEventListener(event -> {
+            System.out.println(event.getNewBestScore());
+            TaskSchedule newBestSolution = event.getNewBestSolution();
+            printTaskSchedule(newBestSolution);
+        });
 
         TaskSchedule unsolvedTaskSchedule = initializeTaskSchedule();
 
+//        new Thread(() -> {
+//            try {
+//                Thread.sleep(5000);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+//            solver.terminateEarly();
+//        }).start();
         TaskSchedule solvedTaskSchedule = solver.solve(unsolvedTaskSchedule);
 
-        System.out.println("Solved Task Schedule:");
-        System.out.println();
+//        System.out.println("Solved Task Schedule:");
+//        System.out.println();
 
+//        printTaskSchedule(solvedTaskSchedule);
+    }
+
+    private void printTaskSchedule(TaskSchedule solvedTaskSchedule) {
         Map<WorkOrder, List<Plan>> map = solvedTaskSchedule.getPlanList()
                 .stream().collect(Collectors.groupingBy(Plan::getWorkOrder));
+
         for (Map.Entry<WorkOrder, List<Plan>> entry : map.entrySet()) {
             WorkOrder workOrder = entry.getKey();
             List<Plan> planList = entry.getValue();
@@ -146,8 +174,8 @@ public class TaskScheduleApp {
 //                System.out.println(task.getTaskName() + "(" + task.getDuration() + ") "
 //                        + workCenter.getWorkCenterName() + "(" + workCenter.getPriority() + ")" + workCenter.getTaskTypes()
 //                        + " --> startDate: " + p.getStartDate() + " endDate: " + p.getEndDate());
-
-                System.out.println(workOrder.getWorkOrderName() + workOrder.getReleaseDate()
+                String s = getWorkCenterListByWorkType(task.getTaskType()).stream().map(WorkCenter::getWorkCenterName).collect(Collectors.joining("|"));
+                System.out.println(workOrder.getWorkOrderName() + workOrder.getReleaseDate() + s
                         + "," + task.getTaskName() + "," + workCenter.getWorkCenterName()
                         + "," + p.getStartDate() + "," + p.getEndDate() + "||"
                         + p.getPredecessorPlanList().stream().map(pp -> pp.getTask().getTaskName())

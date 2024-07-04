@@ -58,7 +58,7 @@ public class Plan {
      * 执行模式
      */
     // Planning variables: changes during planning, between score calculations.
-    @PlanningVariable(strengthWeightFactoryClass = WorkCenterStrengthWeightFactory.class,
+    @PlanningVariable(strengthComparatorClass = WorkCenterStrengthWeightFactory.class,
             valueRangeProviderRefs = "workCenterRange")
     private WorkCenter workCenter;
     /**

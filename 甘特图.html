@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Work Orders Gantt Chart Comparison</title>
+    <title>甘特图</title>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript">
         google.charts.load('current', {'packages':['gantt']});
@@ -33,7 +33,7 @@
             var inputData = document.getElementById(dataInputId).value;
             var rows = inputData.split('\n');
             var dataRows = [];
-            var currTime = (new Date(2024,7,3,8,0,0)).valueOf();
+            var currTime = (new Date(2024,6,3,8,0,0)).valueOf();
 
 
             rows.forEach(row => {
@@ -88,6 +88,6 @@
     
     <br>
     <button onclick="drawCharts()">Render Charts</button>
-    <div id="chart_div1" style="width: 100%; height: 800px;"></div>
+    <div id="chart_div1" style="width: 100%; height:800px;"></div>
 </body>
 </html>
